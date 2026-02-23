@@ -1,28 +1,32 @@
 # Marketing ETL Pipeline  
 **Apache Airflow + BigQuery + dbt + Docker**
 
+![Airflow](https://img.shields.io/badge/Airflow-017CEE?logo=apache-airflow&logoColor=white)
+![dbt](https://img.shields.io/badge/dbt-FF694B?logo=dbt&logoColor=white)
+![BigQuery](https://img.shields.io/badge/BigQuery-669DF6?logo=google-bigquery&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+
 ---
 
 ## 📌 Project Overview
 
-This project implements a production-style marketing data pipeline that simulates how modern companies ingest, transform, and analyze advertising data.
+This project implements a production-style **marketing data pipeline** that simulates how modern companies ingest, transform, and analyze advertising data.
 
 The pipeline:
 
-1. Extracts marketing performance data via API (Python)
-2. Loads raw data into BigQuery
-3. Transforms data using dbt
-4. Orchestrates workflows using Airflow
-5. Produces analytics-ready tables for dashboards
-
-The goal is to demonstrate real-world data engineering skills in orchestration, warehousing, transformation, and reproducibility.
+1. Extracts marketing-like data via API (Python)  
+2. Loads raw data into BigQuery  
+3. Transforms data using dbt  
+4. Orchestrates workflows using Airflow  
+5. Produces analytics-ready tables for dashboards  
 
 ---
 
 ## 🏗 Architecture
 
 ```
-External Marketing API
+External API (Weather → Marketing Simulation)
         ↓
 Python Extraction Script
         ↓
@@ -37,15 +41,6 @@ Analytics Tables (Mart Layer)
 BI Dashboard (Looker Studio)
 ```
 
-### Components
-
-- Orchestration: Apache Airflow
-- Warehouse: BigQuery
-- Transformation: dbt
-- Metadata DB: PostgreSQL
-- Containerization: Docker
-- Version Control: GitHub
-
 ---
 
 ## 📂 Repository Structure
@@ -53,22 +48,21 @@ BI Dashboard (Looker Studio)
 ```
 marketing-etl-airflow-bq-dbt/
 │
-├── dags/                      # Airflow DAG definitions
+├── dags/
 │   └── marketing_etl_dag.py
 │
-├── src/                       # Python extraction logic
+├── src/
 │   └── extract_marketing_data.py
 │
-├── dbt/                       # dbt project
+├── dbt/
 │   ├── models/
 │   └── dbt_project.yml
 │
-├── docs/                      # Architecture & design diagrams
-│   └── architecture.png
+├── docs/
+│   └── architecture.md
 │
 ├── Dockerfile
 ├── docker-compose.yml
-├── requirements.in
 ├── requirements.txt
 └── README.md
 ```
@@ -78,20 +72,17 @@ marketing-etl-airflow-bq-dbt/
 ## ⚙️ Setup Instructions
 
 ### 1️⃣ Clone repository
-
 ```
 git clone <repo-url>
-cd marketing-etl-airflow-bq-dbt
+cd marketing-etl-airflow-bq_dbt
 ```
 
 ### 2️⃣ Start services
-
 ```
 docker compose up --build
 ```
 
-### 3️⃣ Access Airflow UI
-
+### 3️⃣ Access Airflow
 ```
 http://localhost:8080
 ```
@@ -101,98 +92,84 @@ http://localhost:8080
 ## 🗃 Data Model
 
 ### Raw Layer
-- raw_marketing_campaigns
-- raw_ads
-- raw_ad_sets
+- raw_weather (simulated marketing data)
 
 ### Staging Layer (dbt)
-- stg_campaigns
-- stg_ads
+- stg_weather
 
 ### Mart Layer
-- fct_marketing_performance
-- dim_campaign
-- dim_date
+- fct_marketing_performance  
+- dim_date  
 
 ---
 
 ## 📊 Metrics Implemented
 
-- Click Through Rate (CTR)
-- Cost Per Click (CPC)
-- Cost Per Acquisition (CPA)
-- Return on Ad Spend (ROAS)
-- Daily Spend
-- Conversion Rate
+Even though the data comes from a weather API, dbt transforms it into marketing-style KPIs:
+
+- CTR  
+- CPC  
+- CPA  
+- ROAS  
+- Daily Spend  
+- Conversion Rate  
 
 ---
 
 ## 🧪 Data Quality & Testing
 
-- dbt tests (not null, unique, relationships)
-- Incremental model validation
-- Structured logging in Python
-- Idempotent loads
-- Retry logic in Airflow tasks
+- dbt tests (unique, not null, relationships)  
+- Incremental model validation  
+- Structured logging in Python  
+- Idempotent loads  
+- Retry logic in Airflow tasks  
 
 ---
 
 ## 🔁 Orchestration Design
 
-The Airflow DAG is structured into modular tasks:
+Airflow DAG tasks:
 
-- extract_task
-- load_raw_task
-- transform_dbt_task
-- data_quality_task
+- `extract_task`  
+- `load_raw_task`  
+- `transform_dbt_task`  
+- `data_quality_task`  
 
-Key features:
+Features:
 
-- Retry configuration
-- Failure handling
-- Clear task dependencies
-- Parameterized execution
+- Retries  
+- Failure handling  
+- Clear dependencies  
+- Parameterized execution  
 
 ---
 
 ## 🔐 Reproducibility
 
-- Fully Dockerized environment
-- Version-pinned dependencies
-- Airflow constraints respected
-- Environment variables managed via `.env`
-
----
-
-## 💰 Cost Optimization
-
-BigQuery usage is optimized by:
-
-- Partitioned tables
-- Incremental loads
-- Limited raw ingestion size
-- Separation of raw and mart datasets
+- Fully Dockerized  
+- Version-pinned dependencies  
+- Airflow constraints respected  
+- `.env.example` for environment variables  
 
 ---
 
 ## 🚀 Future Improvements
 
-- CI/CD via GitHub Actions
-- Slack failure alerts
-- Data quality monitoring dashboard
-- Infrastructure as Code (Terraform)
-- Secrets management with GCP Secret Manager
+- CI/CD with GitHub Actions  
+- Slack alerts  
+- Data quality dashboard  
+- Terraform IaC  
+- GCP Secret Manager  
 
 ---
 
 ## 🎯 What This Project Demonstrates
 
-- Workflow orchestration
-- Data warehouse modeling
-- Production-aware design
-- Dependency management
-- Cloud data engineering fundamentals
-- Clean repository structure
+- Workflow orchestration  
+- Data warehouse modeling  
+- Production-aware design  
+- Dependency management  
+- Cloud data engineering fundamentals  
 
 ---
 
