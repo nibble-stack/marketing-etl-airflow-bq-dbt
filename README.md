@@ -73,7 +73,7 @@ marketing-etl-airflow-bq-dbt/
 
 ### 1️⃣ Clone repository
 ```
-git clone <repo-url>
+git clone https://github.com/nibble-stack/marketing-etl-airflow-bq-dbt.git
 cd marketing-etl-airflow-bq_dbt
 ```
 
