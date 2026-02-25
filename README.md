@@ -1,5 +1,12 @@
 # Marketing ETL Pipeline  
-**Apache Airflow + BigQuery + dbt + Docker**
+
+<p align="center">
+  <strong>Apache Airflow + BigQuery + dbt + Docker</strong>
+</p>
+
+---
+
+## 🧰 Tech Stack
 
 ![Airflow](https://img.shields.io/badge/Airflow-017CEE?logo=apache-airflow&logoColor=white)
 ![BigQuery](https://img.shields.io/badge/BigQuery-669DF6?logo=google-bigquery&logoColor=white)
@@ -20,6 +27,25 @@ The pipeline:
 3. Transforms data using dbt  
 4. Orchestrates workflows using Airflow  
 5. Produces analytics-ready tables for dashboards  
+
+---
+
+<details open>
+  <summary><strong>📚 Table of Contents</strong></summary>
+
+- [🏗 Architecture](#-architecture)
+- [📂 Repository Structure](#-repository-structure)
+- [⚙️ Setup Instructions](#️-setup-instructions)
+- [🗃 Data Model](#-data-model)
+- [📊 Metrics Implemented](#-metrics-implemented)
+- [🧪 Data Quality & Testing](#-data-quality--testing)
+- [🔁 Orchestration Design](#-orchestration-design)
+- [🔐 Reproducibility](#-reproducibility)
+- [🚀 Future Improvements](#-future-improvements)
+- [🎯 What This Project Demonstrates](#-what-this-project-demonstrates)
+- [👤 Author](#-author)
+
+</details>
 
 ---
 
@@ -88,7 +114,6 @@ docker compose up --build
 - URL: http://localhost:8080
 - Username: admin
 - Password: admin123
-http://localhost:8080
 ```
 
 ---
