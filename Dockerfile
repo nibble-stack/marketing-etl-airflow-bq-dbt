@@ -1,10 +1,13 @@
-FROM apache/airflow:2.10.4-python3.11
+FROM apache/airflow:3.1.7-python3.11
 
 USER root
-# Install system dependencies if needed later
-# RUN apt-get update && apt-get install -y ...
+
+# Optional system deps
+# RUN apt-get update && apt-get install -y build-essential
 
 USER airflow
 
 COPY requirements.txt /requirements.txt
-RUN pip install --no-cache-dir -r /requirements.txt
+
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r /requirements.txt

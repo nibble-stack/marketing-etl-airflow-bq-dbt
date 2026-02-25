@@ -79,11 +79,15 @@ cd marketing-etl-airflow-bq_dbt
 
 ### 2️⃣ Start services
 ```
+export AIRFLOW_UID=$(id -u)
 docker compose up --build
 ```
 
 ### 3️⃣ Access Airflow
 ```
+- URL: http://localhost:8080
+- Username: admin
+- Password: admin123
 http://localhost:8080
 ```
 
