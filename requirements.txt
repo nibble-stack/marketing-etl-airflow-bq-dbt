@@ -1,3 +1,5 @@
 pandas
 psycopg2-binary
 requests
+google-cloud-bigquery
+google-auth
