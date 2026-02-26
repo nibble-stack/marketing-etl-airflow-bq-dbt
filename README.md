@@ -198,7 +198,7 @@ Features:
 
 ---
 
-## 🔐 Reproducibility
+## 🔐 Reproducibility & Security
 
 - Fully Dockerized  
 - Version-pinned dependencies  
