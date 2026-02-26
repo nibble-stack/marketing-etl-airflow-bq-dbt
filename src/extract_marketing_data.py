@@ -12,6 +12,7 @@ import requests
 from datetime import datetime, timezone
 from typing import List, Dict
 import random
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -118,43 +119,116 @@ def extract_data(**context) -> List[Dict]:
 
 
 # -------------------------------------------------------------------
-# Placeholder BigQuery Loader (to be replaced in next step)
+# Load Extracted Data → Temporary BigQuery Table
 # -------------------------------------------------------------------
 
 
-def load_to_bigquery(**context):
-    """
-    Placeholder for BigQuery loading logic.
-    Airflow will pass XCom data here.
-    """
+def load_to_bigquery_temp(records: List[Dict]) -> str:
+    from google.cloud import bigquery
 
     logger.info("Loading data to BigQuery...")
 
-    # Example:
-    # ti = context["ti"]
-    # records = ti.xcom_pull(task_ids="extract_task")
+    client = bigquery.Client()
+    project = os.getenv("GCP_PROJECT_ID")
+    dataset = os.getenv("BIGQUERY_DATASET")
 
-    logger.info("Data successfully loaded to BigQuery (placeholder).")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    table_id = f"{project}.{dataset}.stg_marketing_{timestamp}"
+
+    logger.info(
+        f"Loading {len(records)} records into staging table {table_id}..."
+    )
+
+    job = client.load_table_from_json(
+        records,
+        table_id,
+        job_config=bigquery.LoadJobConfig(
+            write_disposition="WRITE_TRUNCATE",
+            autodetect=True,
+        ),
+    )
+    job.result()
+
+    logger.info(f"Staging table created: {table_id}")
+    return table_id
+
+
+# -------------------------------------------------------------------
+# Move Staging → Raw Table
+# -------------------------------------------------------------------
+
+
+def load_temp_to_raw(temp_table: str):
+    from google.cloud import bigquery
+
+    client = bigquery.Client()
+    project = os.getenv("GCP_PROJECT_ID")
+    dataset = os.getenv("BIGQUERY_DATASET")
+    raw_table = f"{project}.{dataset}.raw_marketing_data"
+
+    logger.info(
+        f"Loading staging table {temp_table} into raw table {raw_table}..."
+    )
+
+    query = f"""
+    CREATE TABLE IF NOT EXISTS `{raw_table}` AS
+    SELECT * FROM `{temp_table}` WHERE 1=0;
+
+    INSERT INTO `{raw_table}`
+    SELECT * FROM `{temp_table}`;
+    """
+
+    client.query(query).result()
+
+    logger.info("Raw load completed.")
 
 
 # -------------------------------------------------------------------
 # TEMPORARY DEBUGGING BLOCK - remove before push
 # -------------------------------------------------------------------
-if __name__ == "__main__":
-    import json
-    from datetime import datetime, timezone
+# if __name__ == "__main__":
+#     import json
+#     from datetime import datetime, timezone
+#
+#     records = extract_data()
+#
+#     # Limit debug output
+#     MAX_DEBUG_RECORDS = 1
+#     debug_records = records[:MAX_DEBUG_RECORDS]
+#
+#     # Create timestamped filename
+#     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+#     filename = f"sample_output_{timestamp}.json"
+#
+#     with open(filename, "w") as f:
+#         json.dump(debug_records, f, indent=4)
+#
+#     print(f"Wrote {len(debug_records)} records to {filename}")
 
-    records = extract_data()
+# -------------------------------------------------------------------
+# V2 TEMPORARY DEBUGGING BLOCK - remove before push
+# -------------------------------------------------------------------
 
-    # Limit debug output
-    MAX_DEBUG_RECORDS = 1
-    debug_records = records[:MAX_DEBUG_RECORDS]
-
-    # Create timestamped filename
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"sample_output_{timestamp}.json"
-
-    with open(filename, "w") as f:
-        json.dump(debug_records, f, indent=4)
-
-    print(f"Wrote {len(debug_records)} records to {filename}")
+# if __name__ == "__main__":
+#     import json
+#
+#     # Deterministic sample instead of live API call
+#     sample_api_response = {
+#         "hourly": {
+#             "time": ["2024-01-01T00:00"],
+#             "temperature_2m": [21.5],
+#             "precipitation": [0.0],
+#         }
+#     }
+#
+#     random.seed(42)  # make synthetic metrics reproducible
+#
+#     records = generate_marketing_records(sample_api_response)
+#
+#     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+#     filename = f"sample_output_{timestamp}.json"
+#
+#     with open(filename, "w") as f:
+#         json.dump(records, f, indent=4)
+#
+#     print(f"Wrote {len(records)} records to {filename}")

@@ -4,7 +4,11 @@ from airflow.operators.bash import BashOperator
 from datetime import datetime
 import logging
 
-from src.extract_marketing_data import extract_data, load_to_bigquery
+from src.extract_marketing_data import (
+    extract_data,
+    load_to_bigquery_temp,
+    load_temp_to_raw,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,27 +19,42 @@ default_args = {
 
 
 def extract_task_callable(**context):
-    """Extract data and push to XCom."""
+    """
+    Extracts data from API and loads directly into a temporary BigQuery table.
+    Only metadata (table name + row count) is pushed to XCom.
+    """
     logger.info("Starting data extraction...")
+
     records = extract_data()
-    logger.info(f"Extracted {len(records)} records.")
-    return records  # Airflow automatically pushes return value to XCom
+    row_count = len(records)
+    logger.info(f"Extracted {row_count} records.")
+
+    # Load directly to BigQuery (no XCom payload)
+    temp_table = load_to_bigquery_temp(records)
+    logger.info(f"Loaded extracted data into temporary table: {temp_table}")
+
+    # XCom contains only metadata
+    return {"temp_table": temp_table, "row_count": row_count}
 
 
 def load_task_callable(**context):
-    """Pull extracted data from XCom and load into BigQuery."""
-    logger.info(f"Extracted {len(records)} records.")
+    """
+    Loads data from the temporary table into the final raw BigQuery table.
+    """
     ti = context["ti"]
-    records = ti.xcom_pull(task_ids="extract_marketing_data")
+    xcom_data = ti.xcom_pull(task_ids="extract_marketing_data")
 
-    if not records:
-        raise ValueError(
-            "No records found in XCom. Extraction may have failed."
-        )
+    temp_table = xcom_data.get("temp_table")
+    row_count = xcom_data.get("row_count")
 
-    logger.info(f"Loading {len(records)} records into BigQuery...")
-    load_to_bigquery(records)
-    logger.info("Load completed successfully.")
+    if not temp_table:
+        raise ValueError("Temporary table name missing from XCom.")
+
+    logger.info(
+        f"Loading {row_count} records from {temp_table} into raw table..."
+    )
+    load_temp_to_raw(temp_table)
+    logger.info("Raw load completed successfully.")
 
 
 with DAG(
