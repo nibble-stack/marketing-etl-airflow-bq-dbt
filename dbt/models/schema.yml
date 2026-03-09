@@ -1,0 +1,81 @@
+version: 2
+
+models:
+
+  # ------------------------------------------------------------
+  # STAGING LAYER
+  # ------------------------------------------------------------
+  - name: stg_marketing
+    description: "Cleaned and standardized marketing data from the raw ingestion layer."
+    columns:
+      - name: timestamp
+        description: "Hourly timestamp for the marketing record."
+        tests:
+          - not_null
+          - unique
+
+      - name: date
+        description: "Date extracted from timestamp."
+
+      - name: temperature
+        description: "Hourly temperature reading."
+
+      - name: precipitation
+        description: "Hourly precipitation reading."
+
+      - name: impressions
+        description: "Number of ad impressions served."
+        tests:
+          - not_null
+
+      - name: clicks
+        description: "Number of ad clicks."
+
+      - name: conversions
+        description: "Number of conversions attributed."
+
+      - name: spend
+        description: "Ad spend for the hour."
+
+      - name: extracted_at
+        description: "Timestamp when the record was ingested."
+
+
+  # ------------------------------------------------------------
+  # MART LAYER
+  # ------------------------------------------------------------
+  - name: fct_marketing_performance
+    description: "Daily marketing performance metrics aggregated from hourly data."
+    columns:
+      - name: date
+        description: "Date of aggregated metrics."
+        tests:
+          - not_null
+          - unique
+
+      - name: impressions
+        description: "Total impressions for the day."
+
+      - name: clicks
+        description: "Total clicks for the day."
+
+      - name: conversions
+        description: "Total conversions for the day."
+
+      - name: spend
+        description: "Total spend for the day."
+
+      - name: ctr
+        description: "Click-through rate (clicks / impressions)."
+
+      - name: cpc
+        description: "Cost per click (spend / clicks)."
+
+      - name: cpa
+        description: "Cost per acquisition (spend / conversions)."
+
+      - name: conversion_rate
+        description: "Conversions divided by clicks."
+
+      - name: roas
+        description: "Return on ad spend."
