@@ -1,0 +1,40 @@
+# models/marts/fct_marketing_performance.yml
+
+version: 2
+
+models:
+  - name: fct_marketing_performance
+    description: "Daily marketing performance metrics aggregated from hourly data."
+    columns:
+      - name: date
+        description: "Date of aggregated metrics."
+        tests:
+          - not_null
+          - unique
+
+      - name: impressions
+        description: "Total impressions for the day."
+
+      - name: clicks
+        description: "Total clicks for the day."
+
+      - name: conversions
+        description: "Total conversions for the day."
+
+      - name: spend
+        description: "Total spend for the day."
+
+      - name: ctr
+        description: "Click-through rate."
+
+      - name: cpc
+        description: "Cost per click."
+
+      - name: cpa
+        description: "Cost per acquisition."
+
+      - name: conversion_rate
+        description: "Conversions divided by clicks."
+
+      - name: roas
+        description: "Return on ad spend."
