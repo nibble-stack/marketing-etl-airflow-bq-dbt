@@ -1,5 +1,13 @@
 version: 2
 
+sources:
+  - name: raw
+    tables:
+      - name: raw_marketing_data
+        freshness:
+          warn_after: {count: 2, period: day}
+          error_after: {count: 3, period: day}
+
 models:
 
   # ------------------------------------------------------------

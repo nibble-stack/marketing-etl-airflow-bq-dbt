@@ -39,7 +39,7 @@ def test_extract_data_structure(mock_get):
     assert expected_keys == set(record.keys())
 
 
-@patch("src.extract_marketing_data.requests.get")
+@patch("google.cloud.bigquery.Client")
 def test_extract_data_types(mock_get):
     mock_response = Mock()
     mock_response.status_code = 200
