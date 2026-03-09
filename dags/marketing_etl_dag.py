@@ -58,7 +58,7 @@ def load_task_callable(**context):
 
 
 with DAG(
-    dag_id="marketing_etl",
+    dag_id="marketing_etl_dag",
     start_date=datetime(2024, 1, 1),
     schedule="@daily",
     catchup=False,
