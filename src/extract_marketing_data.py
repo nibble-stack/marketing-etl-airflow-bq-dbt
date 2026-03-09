@@ -1,10 +1,14 @@
 """
 Marketing Data Extraction Module
 
-Fetches weather data from the Open‑Meteo API and enriches it with
-synthetic marketing metrics (impressions, clicks, spend, conversions).
+Simulates marketing data by enriching Open-Meteo weather data
+with deterministic synthetic performance metrics.
 
-This simulates a real marketing API while keeping the pipeline realistic.
+Architecture:
+- Extract (API)
+- Transform (deterministic synthetic generation)
+- Load → Staging (WRITE_TRUNCATE)
+- Load → Raw (Idempotent MERGE)
 """
 
 import logging
@@ -17,16 +21,16 @@ import os
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
-# -------------------------------------------------------------------
-# API Extraction
-# -------------------------------------------------------------------
-
 OPEN_METEO_URL = (
     "https://api.open-meteo.com/v1/forecast"
     "?latitude=52.52&longitude=13.41"
     "&hourly=temperature_2m,precipitation"
 )
+
+
+# -------------------------------------------------------------------
+# EXTRACT
+# -------------------------------------------------------------------
 
 
 def extract_weather_data() -> Dict:
@@ -42,14 +46,14 @@ def extract_weather_data() -> Dict:
 
     if response.status_code != 200:
         logger.error(f"API request failed: {response.status_code}")
-        raise Exception("Failed to fetch data from Open‑Meteo")
+        raise Exception("Failed to fetch data from Open-Meteo")
 
     logger.info("Weather data successfully retrieved.")
     return response.json()
 
 
 # -------------------------------------------------------------------
-# Transform Weather → Synthetic Marketing Data
+# TRANSFORM (Deterministic)
 # -------------------------------------------------------------------
 
 
@@ -73,7 +77,9 @@ def generate_marketing_records(api_json: Dict) -> List[Dict]:
     records = []
 
     for ts, temp, rain_val in zip(timestamps, temps, rain):
-        # Synthetic marketing metrics
+        # Deterministic seeding ensures idempotent synthetic metrics
+        random.seed(ts)
+
         impressions = random.randint(5_000, 50_000)
         clicks = int(impressions * random.uniform(0.01, 0.08))
         conversions = int(clicks * random.uniform(0.02, 0.15))
@@ -110,7 +116,6 @@ def extract_data(**context) -> List[Dict]:
     """
 
     logger.info("Starting extraction task...")
-
     raw_json = extract_weather_data()
     records = generate_marketing_records(raw_json)
 
@@ -154,7 +159,7 @@ def load_to_bigquery_temp(records: List[Dict]) -> str:
 
 
 # -------------------------------------------------------------------
-# Move Staging → Raw Table
+# LOAD → RAW (Idempotent MERGE)
 # -------------------------------------------------------------------
 
 
@@ -170,17 +175,83 @@ def load_temp_to_raw(temp_table: str):
         f"Loading staging table {temp_table} into raw table {raw_table}..."
     )
 
-    query = f"""
-    CREATE TABLE IF NOT EXISTS `{raw_table}` AS
-    SELECT * FROM `{temp_table}` WHERE 1=0;
+    # ---------------------------------------------------------
+    # 1. Create raw table with explicit schema + partitioning
+    # ---------------------------------------------------------
+    schema = [
+        bigquery.SchemaField("timestamp", "TIMESTAMP"),
+        bigquery.SchemaField("temperature", "FLOAT"),
+        bigquery.SchemaField("precipitation", "FLOAT"),
+        bigquery.SchemaField("impressions", "INT64"),
+        bigquery.SchemaField("clicks", "INT64"),
+        bigquery.SchemaField("conversions", "INT64"),
+        bigquery.SchemaField("spend", "FLOAT"),
+        bigquery.SchemaField("extracted_at", "TIMESTAMP"),
+    ]
 
-    INSERT INTO `{raw_table}`
-    SELECT * FROM `{temp_table}`;
+    table = bigquery.Table(raw_table, schema=schema)
+
+    table.time_partitioning = bigquery.TimePartitioning(
+        type_=bigquery.TimePartitioningType.DAY,
+        field="timestamp",  # partition by date(timestamp)
+    )
+
+    table.clustering_fields = ["timestamp"]
+
+    try:
+        client.get_table(raw_table)
+        logger.info("Raw table already exists — skipping creation.")
+    except Exception:
+        logger.info(
+            "Raw table does not exist — creating with schema + partitioning..."
+        )
+        client.create_table(table)
+        logger.info("Raw table created.")
+
+    # ---------------------------------------------------------
+    # 2. MERGE staging → raw (idempotent load)
+    # ---------------------------------------------------------
+    merge_query = f"""
+    MERGE `{raw_table}` T
+    USING `{temp_table}` S
+    ON T.timestamp = S.timestamp
+
+    WHEN MATCHED THEN
+      UPDATE SET
+        temperature = S.temperature,
+        precipitation = S.precipitation,
+        impressions = S.impressions,
+        clicks = S.clicks,
+        conversions = S.conversions,
+        spend = S.spend,
+        extracted_at = S.extracted_at
+
+    WHEN NOT MATCHED THEN
+      INSERT (
+        timestamp,
+        temperature,
+        precipitation,
+        impressions,
+        clicks,
+        conversions,
+        spend,
+        extracted_at
+      )
+      VALUES (
+        S.timestamp,
+        S.temperature,
+        S.precipitation,
+        S.impressions,
+        S.clicks,
+        S.conversions,
+        S.spend,
+        S.extracted_at
+      );
     """
 
-    client.query(query).result()
+    client.query(merge_query).result()
 
-    logger.info("Raw load completed.")
+    logger.info("Raw MERGE load completed.")
 
 
 # -------------------------------------------------------------------
