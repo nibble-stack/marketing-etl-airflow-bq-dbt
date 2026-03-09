@@ -1,7 +1,7 @@
 # Marketing ETL Pipeline  
 
 <p align="center">
-  <strong>Apache Airflow + BigQuery + dbt + Docker</strong>
+  <strong>Apache Airflow • BigQuery • dbt • Docker • Python</strong>
 </p>
 
 ---
@@ -18,15 +18,18 @@
 
 ## 📌 Project Overview
 
-This project implements a production-style **marketing data pipeline** that simulates how modern companies ingest, transform, and analyze advertising data.
+This project implements a **production-style marketing data pipeline** using modern data engineering tools.  
+It simulates how real companies ingest, transform, and model advertising performance data.
 
 The pipeline:
 
-1. Extracts marketing-like data via API (Python)  
-2. Loads raw data into BigQuery  
-3. Transforms data using dbt  
-4. Orchestrates workflows using Airflow  
-5. Produces analytics-ready tables for dashboards  
+1. Extracts weather data and generates synthetic marketing metrics  
+2. Loads data into a **BigQuery staging table**  
+3. MERGEs staging → raw (idempotent ingestion)  
+4. Transforms data using **dbt (staging + marts)**  
+5. Produces analytics-ready fact tables for BI dashboards  
+
+This project demonstrates a complete, cloud‑native data engineering workflow.
 
 ---
 
@@ -52,17 +55,19 @@ The pipeline:
 ## 🏗 Architecture
 
 ```
-External API (Weather → Marketing Simulation)
+External API (Weather → Synthetic Marketing)
         ↓
-Python Extraction Script
+Python Extraction (Deterministic Synthetic Metrics)
         ↓
 Airflow DAG (Dockerized)
         ↓
-BigQuery (Raw Dataset)
+BigQuery Staging (stg_marketing_YYYYMMDD_HHMMSS)
         ↓
-dbt Transformations
+BigQuery Raw (MERGE, partitioned, clustered)
         ↓
-Analytics Tables (Mart Layer)
+dbt Staging (stg_marketing)
+        ↓
+dbt Mart (fct_marketing_performance)
         ↓
 BI Dashboard (Looker Studio)
 ```
@@ -82,10 +87,14 @@ marketing-etl-airflow-bq-dbt/
 │
 ├── dbt/
 │   ├── models/
+│   │   ├── staging/
+│   │   │   ├── stg_marketing.sql
+│   │   │   └── stg_marketing.yml
+│   │   ├── marts/
+│   │   │   ├── fct_marketing_performance.sql
+│   │   │   └── fct_marketing_performance.yml
+│   │   └── schema.yml
 │   └── dbt_project.yml
-│
-├── docs/
-│   └── architecture.md
 │
 ├── Dockerfile
 ├── docker-compose.yml
@@ -100,10 +109,11 @@ marketing-etl-airflow-bq-dbt/
 ### 1️⃣ Clone repository
 ```
 git clone https://github.com/nibble-stack/marketing-etl-airflow-bq-dbt.git
-cd marketing-etl-airflow-bq_dbt
+cd marketing-etl-airflow-bq-dbt
 ```
 
 ### 2️⃣ Google Cloud Setup (Required)
+
 To run this project, **you must create your own Google Cloud Platform (GCP) project** to ensure secure and cost-effective usage of BigQuery. Here's how to set it up:
 
 1. **Create a Google Cloud project**  
@@ -120,13 +130,11 @@ To run this project, **you must create your own Google Cloud Platform (GCP) proj
 6. **Update the `.env` File**  
    Create your own `.env` based on this repo's `.env.example` file and provide the following configuration, replacing the placeholders with your own values:
 
-   ```env
-   GCP_PROJECT_ID=your-project-id
-   BIGQUERY_DATASET=your-dataset-name
-   GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/keys/bq-service-account.json
-
-Note: This ensures security and cost isolation.
-
+```env
+GCP_PROJECT_ID=your-project-id
+BIGQUERY_DATASET=your-dataset-name
+GOOGLE_APPLICATION_CREDENTIALS=/opt/airflow/keys/bq-service-account.json
+```
 
 ### 3️⃣ Start services
 ```
@@ -136,24 +144,31 @@ docker compose up --build
 
 ### 4️⃣ Access Airflow
 ```
-- URL: http://localhost:8080
-- Username: admin
-- Password: admin123
+http://localhost:8080
+username: admin
+password: admin123
 ```
 
 ---
 
 ## 🗃 Data Model
 
-### Raw Layer
-- raw_weather (simulated marketing data)
+### **Raw Layer (BigQuery)**
+- `raw_marketing_data`  
+  - Partitioned by `DATE(timestamp)`  
+  - Clustered by `timestamp`  
+  - Loaded via MERGE (idempotent)
 
-### Staging Layer (dbt)
-- stg_weather
+### **Staging Layer (dbt)**
+- `stg_marketing`  
+  - Thin, cleaned version of raw data  
+  - Adds `date` column  
+  - Enforces naming consistency  
 
-### Mart Layer
-- fct_marketing_performance  
-- dim_date  
+### **Mart Layer (dbt)**
+- `fct_marketing_performance`  
+  - Daily aggregated marketing KPIs  
+  - Analytics-ready fact table  
 
 ---
 
@@ -161,22 +176,26 @@ docker compose up --build
 
 Even though the data comes from a weather API, dbt transforms it into marketing-style KPIs:
 
-- CTR  
-- CPC  
-- CPA  
-- ROAS  
-- Daily Spend  
-- Conversion Rate  
+- **CTR**  
+- **CPC**  
+- **CPA**  
+- **ROAS**  
+- **Conversion Rate**  
+- **Daily Spend**  
+- **Daily Impressions**  
+- **Daily Clicks**  
+- **Daily Conversions**  
 
 ---
 
 ## 🧪 Data Quality & Testing
 
-- dbt tests (unique, not null, relationships)  
-- Incremental model validation  
-- Structured logging in Python  
-- Idempotent loads  
-- Retry logic in Airflow tasks  
+- dbt tests:
+- `unique` + `not_null` on primary keys  
+- Column-level documentation  
+- BigQuery schema enforcement  
+- Idempotent MERGE ingestion  
+- Airflow retries + logging  
 
 ---
 
@@ -184,17 +203,16 @@ Even though the data comes from a weather API, dbt transforms it into marketing-
 
 Airflow DAG tasks:
 
-- `extract_task`  
-- `load_raw_task`  
-- `transform_dbt_task`  
-- `data_quality_task`  
+- `extract_marketing_data`  
+- `load_raw_bigquery`  
+- `run_dbt_models`  
 
 Features:
 
-- Retries  
-- Failure handling  
-- Clear dependencies  
-- Parameterized execution  
+- Clear task dependencies  
+- Idempotent ingestion  
+- Modular Python functions  
+- Dockerized Airflow environment  
 
 ---
 
@@ -202,33 +220,33 @@ Features:
 
 - Fully Dockerized  
 - Version-pinned dependencies  
-- Airflow constraints respected  
 - `.env.example` for environment variables  
-- No credentials or sensitive files exposed
+- No credentials committed  
+- GCP service account isolated to your project  
 
 ---
 
 ## 🚀 Future Improvements
 
 - CI/CD with GitHub Actions  
-- Slack alerts  
+- Slack alerts for pipeline failures  
 - Data quality dashboard  
-- Terraform IaC  
-- GCP Secret Manager  
+- Terraform for infrastructure provisioning  
+- Additional fact/dimension models  
 
 ---
 
 ## 🎯 What This Project Demonstrates
 
-- Workflow orchestration: Apache Airflow
-- Data warehouse modeling: dbt and BigQuery
-- Production-ready pipeline Design: Docker
-- Efficient task dependency management
-- Cloud data engineering fundamentals  
-- Secure handling of cloud credentials and costs
+- Cloud-native data engineering  
+- BigQuery warehouse modeling  
+- dbt transformations & testing  
+- Airflow orchestration  
+- Production-grade ingestion patterns  
+- Secure and reproducible pipelines  
 
 ---
 
 ## 👤 Author
 
-Aspiring Data Engineer committed to building scalable, secure, and maintainable data pipelines with modern tools and best practices in cloud and data engineering.
+Aspiring Data Engineer focused on building scalable, maintainable, and cloud-native data pipelines using modern tools and best practices.
