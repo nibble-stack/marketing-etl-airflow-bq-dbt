@@ -1,0 +1,33 @@
+# models/staging/stg_marketing.yml
+
+version: 2
+
+models:
+  - name: stg_marketing
+    description: "Cleaned and standardized marketing data from the raw ingestion layer."
+    columns:
+      - name: timestamp
+        description: "Hourly timestamp for the marketing record."
+        tests:
+          - not_null
+          - unique
+
+      - name: date
+        description: "Date extracted from timestamp."
+
+      - name: impressions
+        description: "Number of ad impressions served."
+        tests:
+          - not_null
+
+      - name: clicks
+        description: "Number of ad clicks."
+
+      - name: conversions
+        description: "Number of conversions attributed."
+
+      - name: spend
+        description: "Ad spend for the hour."
+
+      - name: extracted_at
+        description: "Timestamp when the record was ingested."
