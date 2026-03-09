@@ -1,0 +1,6 @@
+models:
+  your_project_name:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
